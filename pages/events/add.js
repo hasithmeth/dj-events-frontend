@@ -1,3 +1,4 @@
+import { parseCookies } from "@/helpers/index";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useState } from "react";
@@ -7,7 +8,7 @@ import Layout from "@/components/Layout";
 import { API_URL } from "@/config/index";
 import styles from "@/styles/Form.module.css";
 
-export default function AddEventsPage() {
+export default function AddEventsPage({ token }) {
 	const [values, setValues] = useState({
 		name: "",
 		performers: "",
@@ -24,6 +25,7 @@ export default function AddEventsPage() {
 		e.preventDefault();
 		console.log(values);
 
+		// Validation
 		const hasEmptyFields = Object.values(values).some(
 			(element) => element === ""
 		);
@@ -36,11 +38,17 @@ export default function AddEventsPage() {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
+				Authorization: `Bearer ${token}`,
 			},
 			body: JSON.stringify(values),
 		});
 
 		if (!res.ok) {
+			if (res.status === 403 || res.status === 401) {
+				console.log(res.status);
+				toast.error("No token included");
+				return;
+			}
 			toast.error("Something went wrong");
 		} else {
 			const evt = await res.json();
@@ -137,4 +145,12 @@ export default function AddEventsPage() {
 			</form>
 		</Layout>
 	);
+}
+
+export async function getServerSideProps({ req }) {
+	const { token } = parseCookies(req);
+
+	return {
+		props: { token },
+	};
 }
